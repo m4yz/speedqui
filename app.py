@@ -1,8 +1,7 @@
 
 import streamlit as st
+import pandas as pd
 import json
-import csv
-import io
 from datetime import datetime
 
 # ============================================================
@@ -13,7 +12,7 @@ st.set_page_config(
     page_title="IT Smart Character Interview",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed"
 )
 
 # ============================================================
@@ -24,101 +23,85 @@ st.markdown(
     """
     <style>
     .stApp {
-        background: #f5f7fb;
+        background-color: #f5f7fa;
     }
 
-    .main-title {
-        font-size: 2.1rem;
-        font-weight: 800;
-        color: #172033;
-        margin-bottom: 0.2rem;
-    }
-
-    .subtitle {
-        color: #667085;
-        font-size: 0.95rem;
-        margin-bottom: 1.4rem;
-    }
-
-    .question-card {
-        background: white;
-        border-radius: 18px;
-        padding: 28px;
-        border: 1px solid #e5eaf2;
-        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
-        margin: 12px 0 20px 0;
+    .block-container {
+        max-width: 1250px;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
 
     .question-number {
         color: #64748b;
-        font-size: 0.85rem;
-        font-weight: 700;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 1px;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
     }
 
     .question-title {
-        font-size: 1.35rem;
-        font-weight: 750;
-        color: #172033;
-        line-height: 1.45;
-        margin-top: 10px;
-        margin-bottom: 22px;
+        font-size: 34px;
+        font-weight: 700;
+        line-height: 1.3;
+        color: #0f172a;
+        text-align: center;
+        margin: 20px 0 30px 0;
     }
 
-    .choice-label {
-        font-size: 0.92rem;
-        font-weight: 650;
-        color: #475467;
-        margin-bottom: 4px;
-    }
-
-    .metric-card {
-        background: white;
-        padding: 18px;
+    .option-card {
+        background-color: white;
+        border: 1px solid #dbe2ea;
         border-radius: 14px;
-        border: 1px solid #e5eaf2;
-        margin-bottom: 10px;
+        padding: 24px;
+        min-height: 130px;
+        display: flex;
+        align-items: center;
+        font-size: 21px;
+        line-height: 1.5;
+        color: #1e293b;
+        margin-bottom: 12px;
     }
 
-    .metric-label {
-        color: #667085;
-        font-size: 0.85rem;
+    .interview-header {
+        background-color: white;
+        border-radius: 16px;
+        padding: 20px 25px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 20px;
     }
 
-    .metric-value {
-        color: #172033;
-        font-size: 1.65rem;
-        font-weight: 800;
+    .result-card {
+        background-color: white;
+        border-radius: 14px;
+        padding: 22px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 15px;
     }
 
-    .section-title {
-        font-size: 1.2rem;
-        font-weight: 750;
-        color: #172033;
-        margin-top: 18px;
-        margin-bottom: 10px;
+    .small-label {
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
     }
 
-    div.stButton > button {
+    div[data-testid="stRadio"] label {
+        font-size: 18px;
+    }
+
+    .stButton button {
         border-radius: 10px;
-        font-weight: 650;
-        min-height: 42px;
-    }
-
-    [data-testid="stMetric"] {
-        background: white;
-        padding: 12px;
-        border-radius: 12px;
-        border: 1px solid #e5eaf2;
+        min-height: 44px;
+        font-weight: 600;
     }
     </style>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 # ============================================================
-# QUESTIONS
+# QUESTION BANK
 # ============================================================
 
 QUESTIONS = [
@@ -127,165 +110,162 @@ QUESTIONS = [
         "category": "Logical Thinking",
         "question": "Saat menghadapi masalah baru, kamu lebih memilih...",
         "a": "Langsung mencoba beberapa solusi untuk melihat hasilnya.",
-        "b": "Mengumpulkan informasi dan memahami penyebab sebelum bertindak.",
+        "b": "Mengumpulkan informasi dan memahami penyebab sebelum bertindak."
     },
     {
         "id": 2,
         "category": "Logical Thinking",
-        "question": "Kamu menemukan dua kemungkinan penyebab masalah.",
-        "a": "Fokus pada penyebab yang paling mungkin terlebih dahulu.",
-        "b": "Periksa kedua kemungkinan secara sistematis sebelum menyimpulkan.",
+        "question": "Jika terjadi gangguan sistem, kamu cenderung...",
+        "a": "Fokus pada penyebab yang paling mungkin terjadi.",
+        "b": "Memeriksa beberapa kemungkinan penyebab secara sistematis."
     },
     {
         "id": 3,
         "category": "Logical Thinking",
-        "question": "Sebuah sistem bekerja normal selama 6 bulan, lalu tiba-tiba bermasalah.",
-        "a": "Mulai dari hal-hal yang baru berubah.",
-        "b": "Mulai dari pemeriksaan dasar sistem secara menyeluruh.",
+        "question": "Ketika masalah muncul setelah perubahan sistem, kamu akan...",
+        "a": "Memeriksa perubahan terakhir yang dilakukan.",
+        "b": "Melakukan pemeriksaan dasar secara menyeluruh."
     },
     {
         "id": 4,
         "category": "Logical Thinking",
-        "question": "Kamu punya solusi yang menurutmu benar, tetapi hasil pengujian tidak sesuai.",
-        "a": "Coba modifikasi solusi sampai mendapatkan hasil yang diharapkan.",
-        "b": "Kembali memeriksa asumsi awal dan menguji hipotesis lain.",
+        "question": "Ketika solusi pertama belum berhasil, kamu lebih memilih...",
+        "a": "Memodifikasi solusi tersebut sampai berhasil.",
+        "b": "Meninjau kembali asumsi dan mencoba hipotesis lain."
     },
     {
         "id": 5,
-        "category": "Learning Ability",
-        "question": "Diberikan aplikasi baru yang belum pernah kamu gunakan.",
-        "a": "Eksplorasi sendiri sampai memahami cara kerjanya.",
-        "b": "Cari dokumentasi atau orang berpengalaman untuk mempercepat belajar.",
+        "category": "Learning & Curiosity",
+        "question": "Saat mempelajari tools baru, kamu cenderung...",
+        "a": "Mengeksplorasi dan mencari tahu secara mandiri.",
+        "b": "Membaca dokumentasi atau bertanya kepada orang berpengalaman."
     },
     {
         "id": 6,
-        "category": "Learning Ability",
-        "question": "Saat training, kamu lebih tertarik...",
-        "a": "Memahami bagaimana sistem bekerja di balik layar.",
-        "b": "Memahami bagaimana sistem digunakan untuk menyelesaikan pekerjaan.",
+        "category": "Learning & Curiosity",
+        "question": "Saat mempelajari sebuah sistem, hal yang paling ingin kamu pahami adalah...",
+        "a": "Cara sistem tersebut bekerja di balik layar.",
+        "b": "Cara menggunakan sistem untuk menyelesaikan pekerjaan."
     },
     {
         "id": 7,
-        "category": "Learning Ability",
-        "question": "Kamu diberi tugas yang bisa selesai dengan cara lama, tetapi ada metode baru.",
-        "a": "Gunakan cara lama yang sudah terbukti berhasil.",
-        "b": "Pelajari cara baru untuk melihat apakah bisa lebih efektif.",
+        "category": "Learning & Curiosity",
+        "question": "Jika ada metode baru untuk menyelesaikan pekerjaan, kamu akan...",
+        "a": "Menggunakan metode lama yang sudah terbukti.",
+        "b": "Mempelajari metode baru untuk melihat apakah lebih efektif."
     },
     {
         "id": 8,
-        "category": "Learning Ability",
-        "question": "Kamu mendengar penjelasan teknis yang belum sepenuhnya kamu pahami.",
-        "a": "Simpan pertanyaan dan pelajari sendiri setelahnya.",
-        "b": "Langsung bertanya agar bisa memahami saat itu juga.",
+        "category": "Learning & Curiosity",
+        "question": "Ketika muncul pertanyaan saat bekerja, kamu lebih memilih...",
+        "a": "Mencatatnya dan mempelajarinya nanti.",
+        "b": "Langsung bertanya agar bisa memahami saat itu juga."
     },
     {
         "id": 9,
         "category": "Creative Problem Solving",
-        "question": "Sistem utama mengalami gangguan dan solusi standar belum berhasil.",
-        "a": "Cari solusi alternatif yang berbeda dari prosedur biasa.",
-        "b": "Periksa kembali prosedur standar secara mendalam.",
+        "question": "Saat prosedur standar tidak menyelesaikan masalah, kamu akan...",
+        "a": "Mencari alternatif di luar prosedur standar.",
+        "b": "Memeriksa prosedur standar secara lebih mendalam."
     },
     {
         "id": 10,
         "category": "Creative Problem Solving",
-        "question": "Kamu punya anggaran terbatas untuk menyelesaikan kebutuhan IT.",
-        "a": "Cari tools atau solusi open-source yang bisa disesuaikan.",
-        "b": "Pilih solusi komersial yang sudah matang dan didukung vendor.",
+        "question": "Untuk kebutuhan sistem baru, kamu lebih tertarik pada...",
+        "a": "Solusi open-source yang bisa disesuaikan.",
+        "b": "Solusi komersial yang matang dan memiliki dukungan vendor."
     },
     {
         "id": 11,
         "category": "Creative Problem Solving",
-        "question": "Kamu harus menyelesaikan pekerjaan berulang setiap hari.",
-        "a": "Cari cara untuk mengotomatisasi pekerjaan tersebut.",
-        "b": "Buat prosedur kerja yang rapi agar proses manual lebih konsisten.",
+        "question": "Jika menemukan pekerjaan berulang, kamu akan...",
+        "a": "Mencari cara untuk mengotomatisasi pekerjaan tersebut.",
+        "b": "Membuat prosedur manual yang lebih terstandarisasi."
     },
     {
         "id": 12,
-        "category": "Decision Making",
-        "question": "Tamu hotel mengalami masalah Wi-Fi dan meminta bantuan segera.",
-        "a": "Segera lakukan tindakan untuk memulihkan koneksi.",
-        "b": "Pahami dampak dan lakukan pemeriksaan singkat sebelum menentukan tindakan.",
+        "category": "Calmness & Decision Making",
+        "question": "Guest Wi-Fi mengalami gangguan besar. Kamu akan...",
+        "a": "Segera melakukan tindakan untuk memulihkan layanan.",
+        "b": "Memahami dampak dan melakukan pemeriksaan singkat terlebih dahulu."
     },
     {
         "id": 13,
-        "category": "Decision Making",
-        "question": "Atasan meminta solusi segera, tetapi informasi yang kamu miliki belum lengkap.",
-        "a": "Sampaikan solusi sementara berdasarkan informasi yang tersedia.",
-        "b": "Minta waktu untuk mengumpulkan informasi penting sebelum merekomendasikan solusi.",
+        "category": "Calmness & Decision Making",
+        "question": "Ketika diminta memberikan solusi dengan cepat, kamu akan...",
+        "a": "Memberikan solusi sementara berdasarkan informasi yang tersedia.",
+        "b": "Mengumpulkan informasi penting terlebih dahulu."
     },
     {
         "id": 14,
-        "category": "Decision Making",
-        "question": "Kamu sedang mengerjakan masalah sulit dan waktu kerja hampir selesai.",
-        "a": "Lanjutkan sampai masalah selesai meskipun harus melewati jam kerja.",
-        "b": "Dokumentasikan progres, komunikasikan status, dan lanjutkan dengan rencana yang jelas.",
+        "category": "Calmness & Decision Making",
+        "question": "Jika pekerjaan belum selesai menjelang akhir jam kerja, kamu akan...",
+        "a": "Tetap melanjutkan pekerjaan sampai selesai.",
+        "b": "Mendokumentasikan status, mengomunikasikan kondisi, dan membuat rencana lanjutan."
     },
     {
         "id": 15,
-        "category": "Practical Judgment",
-        "question": "Sebuah laporan sudah memenuhi kebutuhan pengguna, tetapi masih bisa diperbaiki.",
-        "a": "Selesaikan dan serahkan karena kebutuhan utama sudah terpenuhi.",
-        "b": "Sempurnakan terlebih dahulu agar hasilnya lebih optimal.",
+        "category": "Practical Execution",
+        "question": "Ketika hasil pekerjaan sudah memenuhi requirement, kamu akan...",
+        "a": "Menyelesaikannya dan melanjutkan pekerjaan berikutnya.",
+        "b": "Melakukan penyempurnaan lebih lanjut agar hasilnya lebih sempurna."
     },
     {
         "id": 16,
-        "category": "Practical Judgment",
-        "question": "Kamu menemukan kesalahan kecil dalam data yang akan digunakan untuk laporan manajemen.",
-        "a": "Perbaiki kesalahan yang ditemukan dan lanjutkan pekerjaan.",
-        "b": "Telusuri apakah kesalahan itu menunjukkan masalah yang lebih luas pada sumber data.",
+        "category": "Practical Execution",
+        "question": "Jika menemukan kesalahan kecil pada data, kamu akan...",
+        "a": "Memperbaiki kesalahan tersebut dan melanjutkan pekerjaan.",
+        "b": "Mencari tahu apakah ada masalah yang lebih luas pada sumber data."
     },
     {
         "id": 17,
-        "category": "Curiosity & Initiative",
-        "question": "Kamu menemukan bahwa cara kerja tim saat ini kurang efisien.",
-        "a": "Sampaikan usulan perbaikan meskipun belum diminta.",
-        "b": "Pahami dulu alasan proses tersebut dibuat sebelum mengusulkan perubahan.",
+        "category": "Initiative",
+        "question": "Jika menemukan cara untuk meningkatkan efisiensi pekerjaan, kamu akan...",
+        "a": "Mengusulkan perbaikan meskipun tidak diminta.",
+        "b": "Memahami alasan di balik proses yang berjalan terlebih dahulu."
     },
     {
         "id": 18,
-        "category": "Curiosity & Initiative",
-        "question": "Kamu mendapat tugas yang sangat mudah, tetapi berulang dan membosankan.",
-        "a": "Selesaikan sesuai instruksi dan gunakan waktu untuk tugas lain.",
-        "b": "Cari tahu apakah tugas tersebut bisa dibuat lebih efisien.",
+        "category": "Initiative",
+        "question": "Setelah menyelesaikan pekerjaan rutin lebih cepat, kamu akan...",
+        "a": "Menggunakan waktu yang tersisa untuk pekerjaan lain.",
+        "b": "Mencari cara agar pekerjaan rutin tersebut bisa lebih efisien."
     },
     {
         "id": 19,
-        "category": "Collaboration & Openness",
-        "question": "Rekan kerja memberikan solusi yang berbeda dari pendapatmu.",
-        "a": "Jelaskan alasan mengapa solusi milikmu menurutmu lebih baik.",
-        "b": "Tanyakan alasan dan pertimbangan di balik solusi rekan kerja tersebut.",
+        "category": "Collaboration",
+        "question": "Ketika solusi kamu berbeda dengan rekan kerja, kamu akan...",
+        "a": "Menjelaskan mengapa solusi kamu lebih baik.",
+        "b": "Menanyakan alasan dan pertimbangan di balik solusi rekan kerja."
     },
     {
         "id": 20,
         "category": "Learning Orientation",
-        "question": "Jika kamu memiliki satu jam untuk mempelajari sesuatu yang baru...",
-        "a": "Pilih topik yang langsung berguna untuk pekerjaanmu saat ini.",
-        "b": "Pilih topik yang menarik, meskipun belum tahu kapan akan berguna.",
-    },
+        "question": "Jika memiliki waktu untuk belajar, kamu cenderung memilih...",
+        "a": "Topik yang langsung berguna untuk pekerjaan.",
+        "b": "Topik menarik yang belum tentu langsung memiliki kegunaan."
+    }
 ]
-
-CATEGORIES = sorted(set(q["category"] for q in QUESTIONS))
 
 # ============================================================
 # SESSION STATE
 # ============================================================
 
 DEFAULT_STATE = {
-    "page": "Interview",
+    "page": "setup",
+    "candidate_name": "",
+    "candidate_position": "IT Executive",
+    "interview_date": datetime.now().date(),
     "current_question": 0,
     "answers": {},
     "notes": {},
-    "candidate_name": "",
-    "candidate_position": "IT Executive",
-    "interviewer_name": "",
-    "interview_date": datetime.now().date().isoformat(),
-    "interview_started": False,
-    "interview_finished": False,
+    "completed": False
 }
 
 for key, value in DEFAULT_STATE.items():
     if key not in st.session_state:
         st.session_state[key] = value
+
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -300,492 +280,470 @@ def get_answer(question_id):
     return st.session_state.answers.get(question_id)
 
 
-def get_category_answers(category):
-    result = []
-    for q in QUESTIONS:
-        if q["category"] == category and q["id"] in st.session_state.answers:
-            result.append(st.session_state.answers[q["id"]])
-    return result
+def save_answer(question_id, answer):
+    st.session_state.answers[question_id] = answer
 
 
-def category_summary(category):
-    answers = get_category_answers(category)
-
-    if not answers:
-        return "Belum ada jawaban"
-
-    a_count = answers.count("A")
-    b_count = answers.count("B")
-
-    if a_count > b_count:
-        return f"Pilihan A lebih dominan ({a_count} A / {b_count} B)"
-    elif b_count > a_count:
-        return f"Pilihan B lebih dominan ({a_count} A / {b_count} B)"
-    else:
-        return f"Pilihan seimbang ({a_count} A / {b_count} B)"
+def get_answer_label(answer):
+    if answer == "A":
+        return "A"
+    if answer == "B":
+        return "B"
+    return "-"
 
 
-def generate_recommendations():
-    recommendations = []
+def calculate_category_summary():
+    summary = {}
 
-    # Logical Thinking
-    logical = get_category_answers("Logical Thinking")
-    if logical:
-        recommendations.append(
-            "Logical Thinking: Gali satu kasus troubleshooting dan minta kandidat menjelaskan "
-            "hipotesis, data yang dibutuhkan, dan cara memverifikasi penyebab."
-        )
+    for question in QUESTIONS:
+        category = question["category"]
+        answer = st.session_state.answers.get(question["id"])
 
-    # Learning
-    learning = (
-        get_category_answers("Learning Ability")
-        + get_category_answers("Learning Orientation")
-    )
-    if learning:
-        recommendations.append(
-            "Learning Ability: Tanyakan contoh ketika kandidat mempelajari sistem baru. "
-            "Gali langkah belajar, sumber referensi, dan bagaimana menguji pemahaman."
-        )
-
-    # Creative
-    creative = get_category_answers("Creative Problem Solving")
-    if creative:
-        recommendations.append(
-            "Problem Solving: Berikan kasus dengan keterbatasan anggaran atau tools. "
-            "Minta kandidat membandingkan dua solusi beserta risiko dan effort-nya."
-        )
-
-    # Decision
-    decision = get_category_answers("Decision Making")
-    if decision:
-        recommendations.append(
-            "Decision Making: Berikan skenario gangguan hotel. "
-            "Minta kandidat menjelaskan prioritas, dampak operasional, dan komunikasi eskalasi."
-        )
-
-    # Practical
-    practical = get_category_answers("Practical Judgment")
-    if practical:
-        recommendations.append(
-            "Practical Judgment: Minta kandidat menjelaskan bagaimana menentukan pekerjaan "
-            "sudah cukup baik untuk diserahkan, termasuk quality check dan deadline."
-        )
-
-    # Initiative
-    initiative = get_category_answers("Curiosity & Initiative")
-    if initiative:
-        recommendations.append(
-            "Initiative: Minta contoh perbaikan proses yang pernah dilakukan. "
-            "Gali bagaimana kandidat memvalidasi manfaat dan melibatkan tim."
-        )
-
-    # Collaboration
-    collaboration = get_category_answers("Collaboration & Openness")
-    if collaboration:
-        recommendations.append(
-            "Collaboration: Tanyakan pengalaman ketika pendapat teknisnya berbeda dengan "
-            "rekan atau atasan, serta bagaimana keputusan akhirnya dibuat."
-        )
-
-    return recommendations
-
-
-def build_result():
-    category_counts = {}
-
-    for category in CATEGORIES:
-        answers = get_category_answers(category)
-
-        category_counts[category] = {
-            "A": answers.count("A"),
-            "B": answers.count("B"),
-            "answered": len(answers),
-        }
-
-    result = {
-        "application": "IT Smart Character Interview",
-        "version": "1.0",
-        "candidate": {
-            "name": st.session_state.candidate_name,
-            "position": st.session_state.candidate_position,
-            "interviewer": st.session_state.interviewer_name,
-            "interview_date": st.session_state.interview_date,
-        },
-        "answers": [
-            {
-                "question_id": q["id"],
-                "category": q["category"],
-                "question": q["question"],
-                "choice": st.session_state.answers.get(q["id"]),
-                "note": st.session_state.notes.get(q["id"], ""),
+        if category not in summary:
+            summary[category] = {
+                "total": 0,
+                "answered": 0,
+                "A": 0,
+                "B": 0
             }
-            for q in QUESTIONS
-        ],
-        "category_summary": category_counts,
-        "recommendations": generate_recommendations(),
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
-    }
 
-    return result
+        summary[category]["total"] += 1
+
+        if answer in ["A", "B"]:
+            summary[category]["answered"] += 1
+            summary[category][answer] += 1
+
+    return summary
 
 
-def result_to_csv(result):
-    output = io.StringIO()
+def generate_observations():
+    summary = calculate_category_summary()
+    observations = []
 
-    fieldnames = [
-        "question_id",
-        "category",
-        "question",
-        "choice",
-        "note",
-    ]
+    for category, values in summary.items():
+        if values["answered"] == 0:
+            continue
 
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
-    writer.writeheader()
+        if values["A"] > values["B"]:
+            tendency = "lebih sering memilih opsi A"
+        elif values["B"] > values["A"]:
+            tendency = "lebih sering memilih opsi B"
+        else:
+            tendency = "memiliki pilihan yang relatif seimbang"
 
-    for row in result["answers"]:
-        writer.writerow(row)
+        observations.append({
+            "Category": category,
+            "Answered": values["answered"],
+            "Option A": values["A"],
+            "Option B": values["B"],
+            "Observation": tendency
+        })
 
-    return output.getvalue()
+    return observations
+
+
+def generate_recommendation():
+    summary = calculate_category_summary()
+
+    notes = []
+
+    for category, values in summary.items():
+        if values["answered"] == 0:
+            continue
+
+        if values["A"] == values["B"]:
+            notes.append(
+                f"{category}: pilihan relatif seimbang. "
+                "Perlu pendalaman melalui pertanyaan lanjutan."
+            )
+        elif values["A"] > values["B"]:
+            notes.append(
+                f"{category}: kandidat lebih sering memilih opsi A. "
+                "Validasi kecenderungan ini melalui contoh pengalaman nyata."
+            )
+        else:
+            notes.append(
+                f"{category}: kandidat lebih sering memilih opsi B. "
+                "Validasi kecenderungan ini melalui contoh pengalaman nyata."
+            )
+
+    return notes
+
+
+def create_export_data():
+    rows = []
+
+    for question in QUESTIONS:
+        question_id = question["id"]
+        answer = st.session_state.answers.get(question_id)
+
+        rows.append({
+            "Question": question_id,
+            "Category": question["category"],
+            "Question Text": question["question"],
+            "Option A": question["a"],
+            "Option B": question["b"],
+            "Selected Answer": answer or "",
+            "Interviewer Note": st.session_state.notes.get(question_id, "")
+        })
+
+    return rows
 
 
 # ============================================================
-# SIDEBAR
+# SETUP PAGE
 # ============================================================
 
-with st.sidebar:
-    st.markdown("## 🧠 IT Smart Interview")
-    st.caption("Character & Thinking Interview")
-
-    st.divider()
-
-    st.markdown("### Candidate Profile")
-
-    st.session_state.candidate_name = st.text_input(
-        "Candidate Name",
-        value=st.session_state.candidate_name,
-        placeholder="Enter candidate name",
+def render_setup():
+    st.markdown(
+        """
+        <div class="interview-header">
+            <div class="small-label">IT Recruitment</div>
+            <h1>🧠 IT Smart Character Interview</h1>
+            <p>
+                Interview berbasis pertanyaan A/B untuk mengeksplorasi
+                pola berpikir, cara mengambil keputusan, dan karakter kerja.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    st.session_state.candidate_position = st.selectbox(
-        "Position",
-        [
-            "IT Executive",
-            "IT Engineer",
-            "IT Support",
-            "Data Analyst",
-            "IT Trainee",
-            "Other",
-        ],
-        index=[
-            "IT Executive",
-            "IT Engineer",
-            "IT Support",
-            "Data Analyst",
-            "IT Trainee",
-            "Other",
-        ].index(st.session_state.candidate_position)
-        if st.session_state.candidate_position
-        in [
-            "IT Executive",
-            "IT Engineer",
-            "IT Support",
-            "Data Analyst",
-            "IT Trainee",
-            "Other",
-        ]
-        else 0,
+    st.info(
+        "Gunakan aplikasi ini saat screen sharing. "
+        "Interviewer membacakan pertanyaan dan mencatat jawaban kandidat."
     )
 
-    st.session_state.interviewer_name = st.text_input(
-        "Interviewer",
-        value=st.session_state.interviewer_name,
-        placeholder="Interviewer name",
-    )
+    with st.form("setup_form"):
+        candidate_name = st.text_input(
+            "Nama Kandidat",
+            value=st.session_state.candidate_name,
+            placeholder="Masukkan nama kandidat"
+        )
 
-    st.session_state.interview_date = st.date_input(
-        "Interview Date",
-        value=datetime.fromisoformat(
-            st.session_state.interview_date
-        ).date(),
-    ).isoformat()
+        candidate_position = st.selectbox(
+            "Posisi",
+            [
+                "IT Executive",
+                "IT Supervisor",
+                "Assistant IT Manager",
+                "IT Manager",
+                "Other"
+            ],
+            index=0
+        )
 
-    st.divider()
+        interview_date = st.date_input(
+            "Tanggal Interview",
+            value=st.session_state.interview_date
+        )
 
-    answered_count = len(st.session_state.answers)
-    total_count = len(QUESTIONS)
+        st.markdown("---")
 
-    st.markdown("### Progress")
-    st.progress(answered_count / total_count)
-    st.caption(f"{answered_count} / {total_count} answered")
+        st.write("**Format Interview**")
+        st.write("- 20 pertanyaan A/B")
+        st.write("- Kandidat menjawab secara lisan")
+        st.write("- Tidak ada jawaban benar atau salah")
+        st.write("- Interviewer mencatat konteks dan penjelasan kandidat")
 
-    st.divider()
+        submitted = st.form_submit_button(
+            "Mulai Interview",
+            type="primary",
+            use_container_width=True
+        )
 
-    if st.button("🏠 Interview", use_container_width=True):
-        st.session_state.page = "Interview"
+        if submitted:
+            if not candidate_name.strip():
+                st.error("Nama kandidat wajib diisi.")
+            else:
+                st.session_state.candidate_name = candidate_name.strip()
+                st.session_state.candidate_position = candidate_position
+                st.session_state.interview_date = interview_date
+                st.session_state.page = "interview"
+                st.session_state.current_question = 0
+                st.session_state.completed = False
+                st.rerun()
 
-    if st.button("📊 Results", use_container_width=True):
-        st.session_state.page = "Results"
-
-    if st.button("🔄 New Interview", use_container_width=True):
-        reset_interview()
-        st.rerun()
-
-# ============================================================
-# HEADER
-# ============================================================
-
-st.markdown(
-    '<div class="main-title">IT Smart Character Interview</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    '<div class="subtitle">Rapid A/B interview • Logical thinking • Learning • Decision making</div>',
-    unsafe_allow_html=True,
-)
 
 # ============================================================
 # INTERVIEW PAGE
 # ============================================================
 
-if st.session_state.page == "Interview":
-
-    current_index = st.session_state.current_question
-    question = QUESTIONS[current_index]
+def render_interview():
+    question_index = st.session_state.current_question
+    question = QUESTIONS[question_index]
     question_id = question["id"]
 
-    st.progress((current_index + 1) / len(QUESTIONS))
+    answered_count = len(st.session_state.answers)
+    total_questions = len(QUESTIONS)
 
     st.markdown(
         f"""
-        <div class="question-card">
-            <div class="question-number">
-                QUESTION {current_index + 1} OF {len(QUESTIONS)}
-                &nbsp; • &nbsp; {question["category"]}
-            </div>
-            <div class="question-title">
-                {question["question"]}
-            </div>
+        <div class="interview-header">
+            <div class="small-label">Candidate</div>
+            <h2>{st.session_state.candidate_name}</h2>
+            <p>{st.session_state.candidate_position}</p>
         </div>
         """,
-        unsafe_allow_html=True,
+        unsafe_allow_html=True
     )
 
-    current_choice = get_answer(question_id)
+    progress = answered_count / total_questions
+    st.progress(progress)
 
-    st.markdown('<div class="choice-label">Candidate Choice</div>', unsafe_allow_html=True)
+    col1, col2 = st.columns([3, 1])
 
-    choice = st.radio(
-        "Select candidate answer",
+    with col1:
+        st.markdown(
+            f'<div class="question-number">'
+            f'Question {question_index + 1} of {total_questions}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    with col2:
+        st.markdown(
+            f'<div style="text-align:right;color:#64748b;">'
+            f'Answered: {answered_count}/{total_questions}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    st.markdown(
+        f'<div class="question-title">{question["question"]}</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f'<div class="option-card"><b>A.&nbsp;&nbsp;</b>{question["a"]}</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f'<div class="option-card"><b>B.&nbsp;&nbsp;</b>{question["b"]}</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown("### Catat Jawaban Kandidat")
+
+    current_answer = st.session_state.answers.get(question_id)
+
+    selected_answer = st.radio(
+        "Pilihan kandidat",
         options=["A", "B"],
-        format_func=lambda x: (
-            f"A — {question['a']}"
-            if x == "A"
-            else f"B — {question['b']}"
-        ),
-        index=["A", "B"].index(current_choice)
-        if current_choice in ["A", "B"]
-        else None,
-        key=f"choice_{question_id}",
-        label_visibility="collapsed",
+        index=["A", "B"].index(current_answer)
+        if current_answer in ["A", "B"] else None,
+        horizontal=True,
+        key=f"answer_{question_id}",
+        label_visibility="collapsed"
     )
 
-    if choice:
-        st.session_state.answers[question_id] = choice
+    if selected_answer:
+        save_answer(question_id, selected_answer)
 
-    st.markdown("#### Interviewer Notes")
+    current_note = st.session_state.notes.get(question_id, "")
 
     note = st.text_area(
-        "Write observations or candidate's reasoning",
-        value=st.session_state.notes.get(question_id, ""),
+        "Catatan interviewer",
+        value=current_note,
         placeholder=(
-            "Example: Explains assumptions clearly, asks for logs, "
-            "considers business impact..."
+            "Catat alasan kandidat, contoh pengalaman, "
+            "atau observasi penting..."
         ),
         height=110,
-        key=f"note_{question_id}",
-        label_visibility="collapsed",
+        key=f"note_{question_id}"
     )
 
     st.session_state.notes[question_id] = note
 
-    st.divider()
+    st.markdown("---")
 
-    col1, col2, col3 = st.columns([1, 2, 1])
+    nav1, nav2, nav3 = st.columns([1, 1, 1])
 
-    with col1:
-        if current_index > 0:
-            if st.button("← Previous", use_container_width=True):
-                st.session_state.current_question -= 1
+    with nav1:
+        if st.button(
+            "← Previous",
+            disabled=question_index == 0,
+            use_container_width=True
+        ):
+            st.session_state.current_question -= 1
+            st.rerun()
+
+    with nav2:
+        if st.button(
+            "Reset Interview",
+            use_container_width=True
+        ):
+            reset_interview()
+            st.rerun()
+
+    with nav3:
+        if question_index < total_questions - 1:
+            if st.button(
+                "Next →",
+                type="primary",
+                use_container_width=True
+            ):
+                st.session_state.current_question += 1
+                st.rerun()
+        else:
+            if st.button(
+                "Finish Interview",
+                type="primary",
+                use_container_width=True
+            ):
+                st.session_state.completed = True
+                st.session_state.page = "results"
                 st.rerun()
 
-    with col2:
-        if st.button(
-            "Finish Interview" if current_index == len(QUESTIONS) - 1 else "Save & Continue →",
-            use_container_width=True,
-            type="primary",
-        ):
-            if not choice:
-                st.warning("Please select A or B before continuing.")
-            else:
-                if current_index < len(QUESTIONS) - 1:
-                    st.session_state.current_question += 1
-                    st.rerun()
-                else:
-                    st.session_state.interview_finished = True
-                    st.session_state.page = "Results"
-                    st.rerun()
+    st.caption(
+        "Catatan: pilihan A/B digunakan sebagai bahan diskusi, "
+        "bukan sebagai keputusan otomatis."
+    )
 
-    with col3:
-        if st.button("Results →", use_container_width=True):
-            st.session_state.page = "Results"
-            st.rerun()
 
 # ============================================================
 # RESULTS PAGE
 # ============================================================
 
-elif st.session_state.page == "Results":
-
-    st.markdown("## 📊 Interview Results")
-
-    answered_count = len(st.session_state.answers)
-    total_count = len(QUESTIONS)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric("Answered", f"{answered_count}/{total_count}")
-
-    with col2:
-        st.metric(
-            "A Choices",
-            sum(1 for a in st.session_state.answers.values() if a == "A"),
-        )
-
-    with col3:
-        st.metric(
-            "B Choices",
-            sum(1 for a in st.session_state.answers.values() if a == "B"),
-        )
-
-    st.divider()
-
-    st.markdown("### Candidate")
-
-    candidate_col1, candidate_col2 = st.columns(2)
-
-    with candidate_col1:
-        st.write(f"**Name:** {st.session_state.candidate_name or 'Not specified'}")
-        st.write(f"**Position:** {st.session_state.candidate_position}")
-
-    with candidate_col2:
-        st.write(f"**Interviewer:** {st.session_state.interviewer_name or 'Not specified'}")
-        st.write(f"**Date:** {st.session_state.interview_date}")
-
-    st.divider()
-
-    st.markdown("### Category Overview")
-
-    for category in CATEGORIES:
-        answers = get_category_answers(category)
-
-        a_count = answers.count("A")
-        b_count = answers.count("B")
-
-        with st.expander(category, expanded=True):
-            col_a, col_b, col_c = st.columns(3)
-
-            with col_a:
-                st.metric("Answered", len(answers))
-
-            with col_b:
-                st.metric("A", a_count)
-
-            with col_c:
-                st.metric("B", b_count)
-
-            st.caption(category_summary(category))
-
-    st.divider()
-
-    st.markdown("### 🔍 Interviewer Recommendation")
-
-    st.info(
-        "This section identifies useful areas for follow-up. "
-        "A/B choices alone do not establish intelligence, character, "
-        "or job suitability."
+def render_results():
+    st.markdown(
+        """
+        <div class="interview-header">
+            <div class="small-label">Interview Completed</div>
+            <h1>📊 Interview Result</h1>
+            <p>Ringkasan untuk interviewer</p>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    recommendations = generate_recommendations()
+    st.success("Interview telah selesai.")
 
-    if recommendations:
-        for index, recommendation in enumerate(recommendations, start=1):
-            st.markdown(f"**{index}.** {recommendation}")
+    info1, info2, info3 = st.columns(3)
+
+    with info1:
+        st.metric("Candidate", st.session_state.candidate_name)
+
+    with info2:
+        st.metric("Position", st.session_state.candidate_position)
+
+    with info3:
+        st.metric(
+            "Answered",
+            f"{len(st.session_state.answers)}/{len(QUESTIONS)}"
+        )
+
+    st.markdown("## Ringkasan Pilihan")
+
+    observations = generate_observations()
+
+    if observations:
+        observation_df = pd.DataFrame(observations)
+        st.dataframe(
+            observation_df,
+            use_container_width=True,
+            hide_index=True
+        )
     else:
-        st.warning("Complete more questions to generate recommendations.")
+        st.warning("Belum ada jawaban yang tersimpan.")
 
-    st.divider()
+    st.markdown("## Interviewer Notes")
 
-    st.markdown("### 📝 Interview Notes")
+    for question in QUESTIONS:
+        question_id = question["id"]
+        answer = st.session_state.answers.get(question_id, "-")
+        note = st.session_state.notes.get(question_id, "")
 
-    for q in QUESTIONS:
-        answer = st.session_state.answers.get(q["id"])
-        note = st.session_state.notes.get(q["id"], "")
+        with st.expander(
+            f"Question {question_id} | Answer: {answer}"
+        ):
+            st.write(question["question"])
+            st.write(f"**A:** {question['a']}")
+            st.write(f"**B:** {question['b']}")
 
-        if answer or note:
-            with st.expander(
-                f"Q{q['id']} — {q['category']} — Choice: {answer or '-'}"
-            ):
-                st.write(q["question"])
+            if note:
+                st.write("**Note:**")
+                st.write(note)
+            else:
+                st.caption("Tidak ada catatan.")
 
-                if answer == "A":
-                    st.write(f"**A:** {q['a']}")
-                elif answer == "B":
-                    st.write(f"**B:** {q['b']}")
+    st.markdown("## Recommendation untuk Interviewer")
 
-                st.write(f"**Interviewer Note:** {note or '-'}")
+    st.warning(
+        "Recommendation berikut adalah indikasi awal berdasarkan pola "
+        "pilihan, bukan keputusan otomatis atau penilaian final."
+    )
 
-    st.divider()
+    recommendations = generate_recommendation()
 
-    result = build_result()
+    for recommendation in recommendations:
+        st.write(f"- {recommendation}")
 
-    st.markdown("### 📥 Export Results")
+    st.markdown("---")
 
-    json_data = json.dumps(result, indent=2, ensure_ascii=False)
-    csv_data = result_to_csv(result)
+    export_rows = create_export_data()
 
-    col_json, col_csv = st.columns(2)
+    export_payload = {
+        "candidate_name": st.session_state.candidate_name,
+        "candidate_position": st.session_state.candidate_position,
+        "interview_date": str(st.session_state.interview_date),
+        "completed_at": datetime.now().isoformat(),
+        "answers": export_rows
+    }
 
-    with col_json:
+    json_data = json.dumps(
+        export_payload,
+        indent=2,
+        ensure_ascii=False
+    )
+
+    csv_data = pd.DataFrame(export_rows).to_csv(index=False)
+
+    download1, download2, action = st.columns(3)
+
+    with download1:
         st.download_button(
-            "⬇️ Download JSON",
+            "Download JSON",
             data=json_data,
             file_name=(
                 f"interview_"
-                f"{st.session_state.candidate_name or 'candidate'}_"
-                f"{st.session_state.interview_date}.json"
+                f"{st.session_state.candidate_name.replace(' ', '_')}.json"
             ),
             mime="application/json",
-            use_container_width=True,
+            use_container_width=True
         )
 
-    with col_csv:
+    with download2:
         st.download_button(
-            "⬇️ Download CSV",
+            "Download CSV",
             data=csv_data,
             file_name=(
                 f"interview_"
-                f"{st.session_state.candidate_name or 'candidate'}_"
-                f"{st.session_state.interview_date}.csv"
+                f"{st.session_state.candidate_name.replace(' ', '_')}.csv"
             ),
             mime="text/csv",
-            use_container_width=True,
+            use_container_width=True
         )
 
-    st.divider()
+    with action:
+        if st.button(
+            "Interview Baru",
+            use_container_width=True
+        ):
+            reset_interview()
+            st.rerun()
 
-    if st.button("← Back to Interview", use_container_width=True):
-        st.session_state.page = "Interview"
-        st.rerun()
+
+# ============================================================
+# MAIN ROUTER
+# ============================================================
+
+if st.session_state.page == "setup":
+    render_setup()
+
+elif st.session_state.page == "interview":
+    render_interview()
+
+elif st.session_state.page == "results":
+    render_results()

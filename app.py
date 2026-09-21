@@ -17,7 +17,12 @@ st.set_page_config(
 # CONFIGURATION
 # ============================================================
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
-SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
+# Prefer the server-side service-role key. Keep it only in Streamlit Secrets.
+# The fallback supports the anon key for environments with explicit RLS policies.
+SUPABASE_KEY = st.secrets.get(
+    "SUPABASE_SERVICE_ROLE_KEY",
+    st.secrets.get("SUPABASE_KEY", "")
+)
 
 PUBLIC_MODE = st.query_params.get("view", "interviewer").lower()
 SESSION_CODE_FROM_URL = st.query_params.get("session", "")
@@ -85,7 +90,14 @@ def db_request(method, table, params=None, payload=None):
     response = requests.request(
         method, url, headers=headers(), params=params, json=payload, timeout=15
     )
-    response.raise_for_status()
+    if not response.ok:
+        # Show a useful but controlled error to the interviewer.
+        # Do not print the Supabase key or authorization headers.
+        detail = response.text[:500] if response.text else "No response body"
+        raise RuntimeError(
+            f"Supabase request failed ({response.status_code}) "
+            f"for {method} {table}: {detail}"
+        )
     if response.text:
         return response.json()
     return []
@@ -169,8 +181,11 @@ def session_url(view, code, token):
 token_from_url = st.query_params.get("token", "")
 
 if not configured():
-    st.error("Supabase belum dikonfigurasi. Tambahkan SUPABASE_URL dan SUPABASE_KEY di Streamlit Secrets.")
-    st.code('SUPABASE_URL = "https://your-project.supabase.co"\nSUPABASE_KEY = "your-anon-key"')
+    st.error("Supabase belum dikonfigurasi. Tambahkan URL dan server-side key di Streamlit Secrets.")
+    st.code(
+        'SUPABASE_URL = "https://your-project.supabase.co"\n'
+        'SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"'
+    )
     st.stop()
 
 if PUBLIC_MODE == "presenter":

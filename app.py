@@ -73,6 +73,96 @@ QUESTIONS = [
     for r in RAW_QUESTIONS
 ]
 
+# Follow-up questions are tailored to the selected A/B response.
+FOLLOWUP_BY_ANSWER = {
+    1: {
+        "A": "Setelah mencoba solusi awal, bagaimana kamu memastikan tindakan tersebut tidak menutupi root cause atau menimbulkan dampak lain?",
+        "B": "Bagaimana kamu menentukan informasi minimum yang harus dikumpulkan agar diagnosis tetap cepat ketika operasional sedang terdampak?",
+    },
+    2: {
+        "A": "Bagaimana kamu menguji penyebab yang paling mungkin agar tidak terjebak pada asumsi awal?",
+        "B": "Bagaimana kamu menentukan urutan pemeriksaan agar diagnosis sistematis tetap efisien saat waktu pemulihan terbatas?",
+    },
+    3: {
+        "A": "Bukti apa yang akan kamu cari untuk memastikan perubahan terakhir benar-benar menjadi penyebab gangguan?",
+        "B": "Bagaimana kamu tetap mempertimbangkan perubahan terakhir ketika pemeriksaan dasar tidak menunjukkan masalah?",
+    },
+    4: {
+        "A": "Apa indikator bahwa solusi perlu dihentikan dan pendekatan lain harus dicoba?",
+        "B": "Bagaimana kamu memilih hipotesis alternatif dan menentukan percobaan berikutnya berdasarkan bukti?",
+    },
+    5: {
+        "A": "Bagaimana kamu memvalidasi hasil eksplorasi mandiri sebelum menerapkannya pada sistem produksi?",
+        "B": "Bagaimana kamu memastikan pengetahuan dari dokumentasi atau mentor dapat kamu terapkan secara mandiri?",
+    },
+    6: {
+        "A": "Bagaimana kamu menerjemahkan pemahaman teknis sistem menjadi solusi yang mudah dipahami dan berguna bagi user?",
+        "B": "Bagaimana kamu menggali cara kerja di balik sistem ketika kebutuhan operasional membutuhkan penjelasan teknis lebih dalam?",
+    },
+    7: {
+        "A": "Bagaimana kamu menilai bahwa metode lama masih lebih tepat dibandingkan metode baru?",
+        "B": "Bagaimana kamu menguji metode baru secara terkontrol tanpa mengganggu operasional yang sedang berjalan?",
+    },
+    8: {
+        "A": "Bagaimana kamu menentukan kapan cukup melakukan riset mandiri dan kapan perlu meminta klarifikasi?",
+        "B": "Bagaimana kamu memastikan kebiasaan bertanya tetap diikuti usaha untuk memahami dan mengingat solusinya?",
+    },
+    9: {
+        "A": "Bagaimana kamu memastikan solusi alternatif tetap sesuai kebijakan, aman, dan terdokumentasi?",
+        "B": "Bagaimana kamu mengetahui bahwa prosedur standar memang tidak memadai sebelum mencari alternatif?",
+    },
+    10: {
+        "A": "Bagaimana kamu menilai kemampuan tim memelihara, mengamankan, dan mendukung solusi open-source tersebut?",
+        "B": "Bagaimana kamu mengevaluasi ketergantungan vendor, biaya jangka panjang, dan fleksibilitas solusi komersial?",
+    },
+    11: {
+        "A": "Bagaimana kamu menghitung manfaat, risiko, dan biaya pemeliharaan sebelum mengotomatisasi pekerjaan?",
+        "B": "Bagaimana kamu memastikan standardisasi manual tidak hanya menambah administrasi tetapi benar-benar mengurangi kesalahan?",
+    },
+    12: {
+        "A": "Bagaimana kamu memastikan tindakan pemulihan cepat tetap mempertimbangkan dampak, risiko, dan komunikasi kepada stakeholder?",
+        "B": "Bagaimana kamu menentukan pemeriksaan singkat yang paling penting ketika guest impact sangat tinggi?",
+    },
+    13: {
+        "A": "Bagaimana kamu menjelaskan batasan, risiko, dan masa berlaku solusi sementara kepada user atau stakeholder?",
+        "B": "Bagaimana kamu menentukan informasi minimum yang wajib tersedia sebelum memberikan solusi ketika permintaan sangat mendesak?",
+    },
+    14: {
+        "A": "Bagaimana kamu menilai risiko kelelahan, kesalahan, dan kebutuhan eskalasi ketika memilih melanjutkan pekerjaan di luar jam kerja?",
+        "B": "Bagaimana kamu memastikan handover dan rencana lanjutan cukup jelas agar pekerjaan dapat dilanjutkan tanpa kehilangan konteks?",
+    },
+    15: {
+        "A": "Bagaimana kamu memastikan hasil yang sudah memenuhi requirement tetap memiliki kualitas, keamanan, dan dokumentasi yang memadai?",
+        "B": "Bagaimana kamu menentukan batas penyempurnaan agar tidak berubah menjadi over-engineering atau menunda delivery?",
+    },
+    16: {
+        "A": "Bagaimana kamu memastikan perbaikan lokal tidak menutupi masalah yang lebih luas pada sumber data?",
+        "B": "Bagaimana kamu memprioritaskan investigasi sistemik tanpa mengabaikan kebutuhan memperbaiki laporan dengan segera?",
+    },
+    17: {
+        "A": "Bagaimana kamu memperoleh dukungan stakeholder dan mengelola risiko sebelum menerapkan usulan perubahan?",
+        "B": "Bagaimana kamu menghindari terlalu lama menganalisis konteks sehingga peluang perbaikan tidak pernah dijalankan?",
+    },
+    18: {
+        "A": "Bagaimana kamu memilih pekerjaan tambahan yang paling bermanfaat setelah pekerjaan rutin selesai lebih cepat?",
+        "B": "Ceritakan bagaimana kamu mengukur dampak efisiensi yang kamu usulkan dan memastikan perbaikannya berkelanjutan.",
+    },
+    19: {
+        "A": "Bagaimana kamu merespons jika bukti menunjukkan solusi rekan kerja lebih tepat daripada solusi yang kamu usulkan?",
+        "B": "Bagaimana kamu menyampaikan pendapat sendiri setelah memahami alasan rekan kerja, terutama ketika keputusan harus segera dibuat?",
+    },
+    20: {
+        "A": "Bagaimana kamu mengembangkan pembelajaran yang relevan agar tidak hanya menyelesaikan tugas saat ini tetapi juga meningkatkan kemampuan jangka panjang?",
+        "B": "Bagaimana kamu mengubah topik yang menarik tetapi belum relevan menjadi eksperimen atau manfaat praktis bagi pekerjaan?",
+    },
+}
+
+def selected_followup(q, answer):
+    if answer in ("A", "B"):
+        return FOLLOWUP_BY_ANSWER.get(q["id"], {}).get(answer, q.get("followup", ""))
+    return q.get("followup", "Pilih jawaban A atau B untuk melihat follow-up yang sesuai.")
+
+
 # ============================================================
 # AUTOMATIC ANALYSIS HELPERS
 # ============================================================
@@ -187,6 +277,7 @@ def build_ai_prompt(session):
             "selected_option": answer,
             "selected_text": chosen,
             "interviewer_note": notes.get(str(q["id"]), ""),
+            "suggested_followup": selected_followup(q, answer),
         })
     return {
         "candidate_name": session.get("candidate_name", ""),
@@ -622,7 +713,7 @@ st.subheader("🔒 Live Behavioral Analysis")
 st.write(live_interpretation(q, answer))
 
 st.subheader("Suggested Follow-up")
-st.info(q["followup"])
+st.info(selected_followup(q, answer))
 
 note_value = st.text_area(
     "Private Observation / Evidence",
@@ -713,7 +804,7 @@ for item in QUESTIONS:
         "Selected Answer": item_answer,
         "Behavioral Interpretation": rich_interpretation(item, item_answer),
         "Interviewer Note": notes.get(str(item["id"]), ""),
-        "Follow-up": item["followup"],
+        "Follow-up": selected_followup(item, item_answer),
     })
 
 payload = {

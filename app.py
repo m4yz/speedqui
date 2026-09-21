@@ -277,7 +277,7 @@ def build_ai_prompt(session):
             "selected_option": answer,
             "selected_text": chosen,
             "interviewer_note": notes.get(str(q["id"]), ""),
-            "suggested_followup": selected_followup(q, answer),
+            "predefined_followup": selected_followup(q, answer),
         })
     return {
         "candidate_name": session.get("candidate_name", ""),
@@ -292,17 +292,40 @@ def generate_ai_assessment(session):
         raise RuntimeError("OPENAI_API_KEY belum dikonfigurasi di Streamlit Secrets.")
 
     system_prompt = (
-        "You are an HR interview assessment assistant for an IT hotel operations role. "
-        "Write the assessment in clear professional Indonesian. Treat A/B choices as "
-        "behavioral preferences, not as automatic good/bad scores. Do not invent evidence. "
-        "Separate observed evidence from hypotheses and validation needs. Do not make a "
-        "final hiring decision. Return Markdown with these headings: Executive Summary, "
-        "Competency Review, Potential Strengths to Validate, Areas Requiring Validation, "
-        "Suggested Follow-up Questions, and Interviewer Decision Support."
+        "You are a senior HR assessment partner and IT hotel operations hiring advisor. "
+        "Write a strong, specific, evidence-based assessment in professional Indonesian. "
+        "The purpose is to help the interviewer evaluate the candidate using the recorded A/B choices and the "
+        "interviewer notes from the predefined follow-up questions. Do not merely repeat each answer. "
+        "A/B choices represent behavioral tendencies and trade-offs, not automatic good/bad scores. "
+        "The predefined follow-up question is supplied by the application; do not create, recommend, or list any "
+        "additional follow-up questions. Instead, assess the quality and sufficiency of the interviewer note "
+        "that records the candidate's response to that predefined follow-up. "
+        "Do not invent achievements, experience, technical knowledge, or evidence. Explicitly distinguish "
+        "documented evidence from reasonable interpretation and from points that remain unverified. "
+        "Consider repeated patterns, strengths, risks, trade-offs, inconsistencies, and implications for hotel IT "
+        "operations: uptime, guest impact, urgency, controls, communication, documentation, and stakeholder coordination. "
+        "Do not give a final hire/reject decision, ranking, numeric score, or unsupported personality label. "
+        "Do not treat unanswered questions or empty interviewer notes as negative evidence. "
+        "Return Markdown with exactly these sections: "
+        "## Executive Summary; ## Evidence-Based Pattern Analysis; ## Competency Review; "
+        "## Potential Strengths to Validate; ## Areas Requiring Validation; ## Interviewer Decision Support. "
+        "In Executive Summary write 3-5 substantial paragraphs: overall behavioral pattern, strongest evidence-backed "
+        "strengths, material risks or trade-offs, quality of the follow-up evidence, and what remains unverified. "
+        "In Evidence-Based Pattern Analysis identify 4-6 cross-question patterns and cite supporting question IDs, "
+        "the relevant A/B choices, interviewer-note evidence when available, interpretation, and operational implication. "
+        "In Competency Review cover every represented competency with: observed pattern, supporting question IDs, "
+        "interviewer evidence, potential strength, concern or trade-off, and evidence confidence. "
+        "Do not overstate conclusions when notes are missing. In Interviewer Decision Support provide a concise "
+        "evidence summary and a practical verification checklist, not new interview questions."
     )
     user_prompt = (
-        "Analyze the following interview data. Mention when interviewer notes are absent "
-        "or insufficient. Use balanced, evidence-based language.\\n\\n"
+        "Analyze the following interview data deeply. Interviewer notes are the recorded responses to the "
+        "application's predefined follow-up questions; do not generate any new follow-up questions. If notes are empty, "
+        "state clearly that the assessment is based primarily on forced-choice responses and that behavioral evidence "
+        "remains limited. Use question IDs as evidence references. Compare patterns across answers and distinguish "
+        "A/B indication from actual interviewer-observed evidence. Prioritize specificity, operational relevance, "
+        "and actionable validation. Avoid generic statements unless you explain exactly which responses or notes "
+        "support them. Include a confidence qualifier when evidence is limited or contradictory.\n\n"
         + json.dumps(build_ai_prompt(session), ensure_ascii=False, indent=2)
     )
     response = requests.post(

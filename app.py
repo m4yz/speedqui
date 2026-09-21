@@ -353,6 +353,7 @@ if not session:
 # INTERVIEWER VIEW — MAIN
 # ============================================================
 st.title("📋 Interviewer Dashboard")
+st.caption("App version: AUTO-CONCLUSION-V2 | If this label is not visible after deployment, Streamlit is still running an older commit.")
 st.write(f"**Candidate:** {session['candidate_name']}  |  **Position:** {session['position']}  |  **Date:** {session['interview_date']}")
 
 with st.expander("🔗 Screen Sharing Links", expanded=True):
@@ -439,7 +440,16 @@ for category in dict.fromkeys(q["category"] for q in QUESTIONS):
 
 st.divider()
 st.subheader("🏁 Automatic Interview Conclusion")
-st.info(automatic_conclusion(session))
+st.success("Automatic analysis generated from the answers currently saved in Supabase.")
+st.markdown(
+    f"""
+    <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 18px;
+                background-color: rgba(46, 125, 50, 0.06); line-height: 1.65;">
+        {automatic_conclusion(session)}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.subheader("Interviewer Final Notes")
 conclusion = st.text_area(

@@ -70,6 +70,104 @@ QUESTIONS = [
 ]
 
 # ============================================================
+# AUTOMATIC ANALYSIS HELPERS
+# ============================================================
+SIGNAL_TEXT = {
+    "action_first": ("memulai dari tindakan awal untuk mendapatkan respons", "respons cepat", "validasi risiko dan diagnosis"),
+    "structured_analysis": ("mengumpulkan informasi dan memahami penyebab sebelum bertindak", "perhatian pada akar masalah", "jangan sampai analisis memperlambat respons"),
+    "hypothesis_focus": ("memulai dari penyebab yang paling mungkin", "membuat hipotesis awal", "uji hipotesis dengan bukti"),
+    "systematic_diagnosis": ("memeriksa beberapa kemungkinan secara sistematis", "mengurangi risiko melewatkan penyebab", "tetapkan prioritas pemeriksaan"),
+    "change_correlation": ("menghubungkan gangguan dengan perubahan terakhir", "peka terhadap korelasi perubahan dan insiden", "konfirmasi korelasi melalui log atau pengujian"),
+    "baseline_check": ("memeriksa kondisi dasar secara menyeluruh", "memperhatikan baseline", "jangan abaikan indikasi perubahan yang relevan"),
+    "iterative_action": ("memodifikasi solusi secara bertahap", "bersedia melakukan iterasi", "tetapkan batas percobaan dan kriteria eskalasi"),
+    "assumption_review": ("meninjau asumsi dan mencoba hipotesis lain", "terbuka mengevaluasi ulang pendekatan", "pastikan perubahan pendekatan berdasarkan data"),
+    "self_exploration": ("mengeksplorasi tools baru secara mandiri", "inisiatif belajar mandiri", "lengkapi dengan dokumentasi dan validasi"),
+    "guided_learning": ("memanfaatkan dokumentasi atau pengalaman orang lain", "memakai sumber belajar terarah", "pastikan pengetahuan juga dapat diterapkan mandiri"),
+    "technical_depth": ("memahami cara kerja sistem di balik layar", "ketertarikan pada kedalaman teknis", "hubungkan teknis dengan kebutuhan user dan bisnis"),
+    "task_application": ("memahami cara menggunakan sistem untuk menyelesaikan pekerjaan", "orientasi penerapan praktis", "pastikan risiko dan konteks tetap dipahami"),
+    "proven_method": ("mempertahankan metode yang sudah terbukti", "memperhatikan stabilitas", "evaluasi peluang improvement"),
+    "experimentation": ("menguji metode baru untuk melihat efektivitasnya", "terbuka terhadap eksperimen", "gunakan pengujian terkontrol"),
+    "self_research": ("mencari dan mempelajari jawaban secara mandiri", "kecenderungan mencari informasi sendiri", "tentukan kapan perlu eskalasi"),
+    "immediate_clarification": ("meminta klarifikasi secara langsung", "mengurangi ketidakjelasan lebih awal", "seimbangkan bertanya dengan riset mandiri"),
+    "creative_alternative": ("mencari alternatif di luar prosedur standar", "terbuka pada pendekatan alternatif", "pastikan persetujuan, kontrol risiko, dan dokumentasi"),
+    "process_review": ("meninjau prosedur standar secara lebih mendalam", "memperhatikan proses dan kontrol", "kenali kapan prosedur perlu diperbaiki"),
+    "customization": ("mempertimbangkan solusi open-source yang dapat disesuaikan", "memperhatikan fleksibilitas", "evaluasi keamanan, biaya, kompetensi, dan dukungan"),
+    "vendor_support": ("mempertimbangkan solusi komersial dengan dukungan vendor", "memperhatikan kematangan dan dukungan", "bandingkan biaya, ketergantungan, dan fleksibilitas"),
+    "automation": ("mencari peluang otomasi pada pekerjaan berulang", "peka terhadap efisiensi", "pastikan monitoring dan fallback tersedia"),
+    "standardization": ("menstandarkan prosedur manual", "memperhatikan konsistensi", "evaluasi apakah otomasi lebih sesuai"),
+    "rapid_restoration": ("memprioritaskan pemulihan layanan secara cepat", "memperhatikan dampak operasional", "tetap lakukan pengamanan dan dokumentasi"),
+    "impact_assessment": ("memahami dampak sebelum melakukan tindakan", "mempertimbangkan konsekuensi", "tetapkan batas waktu analisis"),
+    "provisional_action": ("memberikan solusi sementara berdasarkan informasi tersedia", "mampu bertindak di tengah informasi terbatas", "komunikasikan risiko dan rencana permanen"),
+    "information_gathering": ("mengumpulkan informasi penting terlebih dahulu", "membuat keputusan berbasis informasi", "bedakan informasi wajib dan tambahan"),
+    "persistence": ("melanjutkan pekerjaan sampai selesai", "dorongan menyelesaikan tanggung jawab", "pertimbangkan kelelahan, eskalasi, dan handover"),
+    "handover_planning": ("mendokumentasikan status dan menyiapkan rencana lanjutan", "memperhatikan kesinambungan", "pastikan isu kritis tetap dieskalasikan"),
+    "delivery_focus": ("menyelesaikan pekerjaan ketika requirement terpenuhi", "orientasi penyelesaian", "tetap periksa kualitas dan risiko"),
+    "quality_refinement": ("melakukan penyempurnaan lebih lanjut", "memperhatikan kualitas dan detail", "tetapkan batas agar tidak over-engineering"),
+    "local_fix": ("memperbaiki kesalahan lokal dan melanjutkan pekerjaan", "menjaga progres", "pastikan masalah sistemik tidak terlewat"),
+    "systemic_investigation": ("memeriksa kemungkinan masalah yang lebih luas", "memperhatikan risiko sistemik", "prioritaskan investigasi berdasarkan dampak"),
+    "proactive_change": ("mengusulkan perbaikan meskipun tidak diminta", "kecenderungan proaktif", "libatkan konteks dan stakeholder"),
+    "context_first": ("memahami alasan dan konteks proses sebelum mengubahnya", "memperhatikan dampak perubahan", "jangan sampai konteks menghambat improvement"),
+    "task_completion": ("menggunakan waktu tersisa untuk pekerjaan lain", "memperhatikan penyelesaian pekerjaan", "tetap identifikasi peluang efisiensi"),
+    "efficiency_improvement": ("mencari cara agar pekerjaan rutin lebih efisien", "memperhatikan continuous improvement", "uji improvement berdasarkan dampak"),
+    "advocacy": ("menjelaskan alasan mengapa solusi sendiri lebih baik", "mampu menyampaikan argumen", "tetap terbuka pada masukan dan bukti"),
+    "active_listening": ("menanyakan alasan dan pertimbangan rekan kerja", "mendengarkan perspektif", "arahkan diskusi menuju keputusan jelas"),
+    "job_relevance": ("memilih topik belajar yang langsung relevan dengan pekerjaan", "orientasi penerapan praktis", "tetap beri ruang untuk wawasan baru"),
+    "broad_curiosity": ("mengeksplorasi topik baru meskipun manfaatnya belum langsung terlihat", "rasa ingin tahu luas", "hubungkan pembelajaran dengan eksperimen praktis"),
+}
+
+def signal_info(signal):
+    return SIGNAL_TEXT.get(signal, (signal.replace('_', ' '), 'preferensi pendekatan tertentu', 'validasi melalui contoh nyata'))
+
+def rich_interpretation(q, answer):
+    if answer not in ('A', 'B'):
+        return 'Belum ada pilihan A/B yang dicatat.'
+    signal = q['signal_a'] if answer == 'A' else q['signal_b']
+    label, strength, watchout = signal_info(signal)
+    return (f"Kandidat memilih pendekatan yang {label}. "
+            f"Potensi kekuatan yang perlu digali: {strength}. "
+            f"Hal yang perlu divalidasi: {watchout}.")
+
+def category_analysis(session, category):
+    answers = session.get('answers') or {}
+    notes = session.get('notes') or {}
+    labels, strengths, watchouts = [], [], []
+    answered, noted = 0, 0
+    for q in QUESTIONS:
+        if q['category'] != category:
+            continue
+        answer = answers.get(str(q['id']))
+        if answer not in ('A', 'B'):
+            continue
+        answered += 1
+        signal = q['signal_a'] if answer == 'A' else q['signal_b']
+        label, strength, watchout = signal_info(signal)
+        labels.append(label); strengths.append(strength); watchouts.append(watchout)
+        if str(notes.get(str(q['id']), '')).strip():
+            noted += 1
+    unique = lambda xs: list(dict.fromkeys(xs))
+    return {
+        'answered': answered,
+        'noted': noted,
+        'pattern': '; '.join(unique(labels)) if labels else 'Belum ada jawaban yang tercatat.',
+        'strengths': unique(strengths),
+        'watchouts': unique(watchouts),
+    }
+
+def automatic_conclusion(session):
+    answers = session.get('answers') or {}
+    completed = sum(1 for value in answers.values() if value in ('A', 'B'))
+    if not completed:
+        return 'Belum ada jawaban yang cukup untuk membuat ringkasan otomatis.'
+    parts = []
+    for category in dict.fromkeys(q['category'] for q in QUESTIONS):
+        data = category_analysis(session, category)
+        if data['answered']:
+            parts.append(f"{category}: {data['pattern']}. Validasi: {'; '.join(data['watchouts'][:2])}.")
+    return (f"Ringkasan indikasi awal dari {completed} jawaban. "
+            "Pola ini harus dibaca bersama jawaban verbal dan catatan interviewer. "
+            + ' '.join(parts) + " Ini bukan skor otomatis atau keputusan hiring.")
+
+# ============================================================
 # SUPABASE HELPERS
 # Required tables are provided in supabase_schema.sql.
 # ============================================================
@@ -150,14 +248,7 @@ def update_session(session_id, changes):
     return result is not None
 
 def live_interpretation(q, answer):
-    if answer not in ("A", "B"):
-        return "Belum ada pilihan yang dicatat."
-    signal = q["signal_a"] if answer == "A" else q["signal_b"]
-    return (
-        f"Jawaban {answer} mengindikasikan {signal}. "
-        "Ini merupakan indikasi awal, bukan kesimpulan final, dan perlu dibaca "
-        "bersama jawaban verbal serta bukti pengalaman kandidat."
-    )
+    return rich_interpretation(q, answer)
 
 def category_summary(session):
     answers = session.get("answers") or {}
@@ -291,6 +382,7 @@ answer = st.radio(
     ["A", "B"],
     index=["A", "B"].index(current_answer) if current_answer in ("A", "B") else None,
     horizontal=True,
+    key=f"answer_question_{q['id']}",
 )
 if answer and answer != current_answer:
     answers[str(q["id"])] = answer
@@ -330,12 +422,26 @@ if note_value != notes.get(str(q["id"]), ""):
     update_session(session["id"], {"notes": notes})
 
 st.divider()
-st.subheader("📊 Private Summary")
-for category, values in category_summary(session).items():
-    st.write(f"**{category}:** Answered {values['answered']} | A: {values['a']} | B: {values['b']}")
+st.subheader("📊 Private Summary by Competency")
+for category in dict.fromkeys(q["category"] for q in QUESTIONS):
+    data = category_analysis(session, category)
+    with st.expander(f"{category} — {data['answered']} answered / {data['noted']} notes"):
+        st.markdown("**Observed pattern**")
+        st.write(data["pattern"])
+        if data["strengths"]:
+            st.markdown("**Potential strengths to validate**")
+            for item in data["strengths"]:
+                st.write(f"- {item}")
+        if data["watchouts"]:
+            st.markdown("**Validation points**")
+            for item in data["watchouts"]:
+                st.write(f"- {item}")
 
 st.divider()
-st.subheader("🏁 Interview Conclusion")
+st.subheader("🏁 Automatic Interview Conclusion")
+st.info(automatic_conclusion(session))
+
+st.subheader("Interviewer Final Notes")
 conclusion = st.text_area(
     "Balanced conclusion",
     value=session.get("overall_conclusion", ""),
@@ -359,7 +465,7 @@ for item in QUESTIONS:
         "Option A": item["a"],
         "Option B": item["b"],
         "Selected Answer": item_answer,
-        "Behavioral Interpretation": live_interpretation(item, item_answer),
+        "Behavioral Interpretation": rich_interpretation(item, item_answer),
         "Interviewer Note": notes.get(str(item["id"]), ""),
         "Follow-up": item["followup"],
     })

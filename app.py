@@ -172,7 +172,7 @@ def category_summary(session):
     return result
 
 def session_url(view, code, token):
-    base = "https://YOUR-STREAMLIT-APP.streamlit.app"
+    base = "https://speedqui.streamlit.app/"
     return f"{base}/?view={view}&session={code}&token={token}"
 
 # ============================================================

@@ -172,7 +172,7 @@ def category_summary(session):
     return result
 
 def session_url(view, code, token):
-    base = "https://speedqui.streamlit.app/"
+    base = "https://speedqui.streamlit.app"
     return f"{base}/?view={view}&session={code}&token={token}"
 
 # ============================================================
@@ -271,7 +271,7 @@ with st.expander("🔗 Screen Sharing Links", expanded=True):
     st.text_input("Session Code", value=session["session_code"], disabled=True)
     st.text_input("Presenter URL — share this only", value=presenter_link)
     st.text_input("Interviewer URL — keep private", value=interviewer_link)
-    st.caption("Ganti YOUR-STREAMLIT-APP dengan alamat aplikasi Streamlit Cloud Syam.")
+    st.caption("Presenter URL dapat dibagikan melalui Microsoft Teams atau Zoom. Jangan bagikan Interviewer URL.")
 
 index = int(session.get("current_index", 0))
 q = QUESTIONS[index]

@@ -5,6 +5,8 @@ import secrets
 import string
 import requests
 from datetime import datetime
+from io import BytesIO
+
 
 st.set_page_config(
     page_title="IT Smart Character Interview",
@@ -242,6 +244,138 @@ def generate_ai_assessment(session):
     if not output_text.strip():
         raise RuntimeError("OpenAI tidak mengembalikan teks analisis.")
     return output_text.strip()
+
+
+# ============================================================
+# PDF EXPORT
+# ============================================================
+def build_pdf_export(session, questions_rows, ai_assessment, conclusion):
+    """Create an interviewer-only PDF report in memory."""
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    from xml.sax.saxutils import escape
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=16 * mm,
+        leftMargin=16 * mm,
+        topMargin=15 * mm,
+        bottomMargin=15 * mm,
+        title=f"Interview Report - {session.get('candidate_name', '')}",
+        author="IT Smart Character Interview",
+    )
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name="ReportTitle", parent=styles["Title"], alignment=TA_CENTER,
+        fontSize=18, leading=22, spaceAfter=12,
+    ))
+    styles.add(ParagraphStyle(
+        name="Small", parent=styles["BodyText"], fontSize=8.5, leading=11,
+        spaceAfter=4,
+    ))
+    styles.add(ParagraphStyle(
+        name="Section", parent=styles["Heading2"], fontSize=13, leading=16,
+        spaceBefore=10, spaceAfter=6,
+    ))
+    styles.add(ParagraphStyle(
+        name="Question", parent=styles["BodyText"], fontSize=8.5, leading=11,
+        spaceAfter=5,
+    ))
+    styles.add(ParagraphStyle(
+        name="AI", parent=styles["BodyText"], fontSize=9, leading=12,
+        spaceAfter=5,
+    ))
+
+    story = []
+    story.append(Paragraph("IT Smart Character Interview Report", styles["ReportTitle"]))
+    info = [
+        ["Candidate", escape(str(session.get("candidate_name", "")))],
+        ["Position", escape(str(session.get("position", "")))],
+        ["Interview Date", escape(str(session.get("interview_date", "")))],
+        ["Session Code", escape(str(session.get("session_code", "")))],
+        ["Status", escape(str(session.get("status", "")))],
+    ]
+    info_table = Table(info, colWidths=[38 * mm, 135 * mm])
+    info_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#EAF0F6")),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#B8C4D1")),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.extend([info_table, Spacer(1, 10)])
+
+    story.append(Paragraph("AI Full Assessment", styles["Section"]))
+    if ai_assessment:
+        # Convert common Markdown patterns into readable PDF paragraphs.
+        for raw_line in str(ai_assessment).splitlines():
+            line = raw_line.strip()
+            if not line:
+                story.append(Spacer(1, 4))
+                continue
+            if line.startswith("### "):
+                story.append(Paragraph(escape(line[4:]), styles["Section"]))
+            elif line.startswith("## "):
+                story.append(Paragraph(escape(line[3:]), styles["Section"]))
+            elif line.startswith("# "):
+                story.append(Paragraph(escape(line[2:]), styles["Section"]))
+            elif line.startswith("- ") or line.startswith("* "):
+                story.append(Paragraph("• " + escape(line[2:]), styles["AI"]))
+            else:
+                story.append(Paragraph(escape(line), styles["AI"]))
+    else:
+        story.append(Paragraph("AI assessment belum dibuat.", styles["Small"]))
+
+    story.append(Paragraph("Automatic Interview Conclusion", styles["Section"]))
+    story.append(Paragraph(escape(str(automatic_conclusion(session))), styles["AI"]))
+
+    story.append(Paragraph("Interviewer Final Notes", styles["Section"]))
+    story.append(Paragraph(escape(str(conclusion or "Belum ada catatan final.")), styles["AI"]))
+
+    story.append(PageBreak())
+    story.append(Paragraph("Question-by-Question Record", styles["Section"]))
+    for row in questions_rows:
+        question_header = f"{row['Question']}. {row['Category']}"
+        story.append(Paragraph(escape(question_header), styles["Section"]))
+        details = [
+            ["Question", row["Question Text"]],
+            ["Selected Answer", row["Selected Answer"] or "Not answered"],
+            ["Option A", row["Option A"]],
+            ["Option B", row["Option B"]],
+            ["Behavioral Interpretation", row["Behavioral Interpretation"]],
+            ["Interviewer Note", row["Interviewer Note"] or "-"],
+            ["Follow-up", row["Follow-up"]],
+        ]
+        safe_details = [[escape(str(k)), escape(str(v))] for k, v in details]
+        q_table = Table(safe_details, colWidths=[39 * mm, 134 * mm], repeatRows=0)
+        q_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F4F6F8")),
+            ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#C7D0D9")),
+            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+            ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("LEADING", (0, 0), (-1, -1), 10),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.extend([q_table, Spacer(1, 8)])
+
+    doc.build(story)
+    return buffer.getvalue()
 
 
 # ============================================================
@@ -520,7 +654,10 @@ st.subheader("🤖 AI Full Assessment")
 st.caption("Private interviewer-only analysis. The candidate should not see this section.")
 
 if "ai_assessment" not in st.session_state:
-    st.session_state["ai_assessment"] = session.get("assessments") or ""
+    saved_assessment = session.get("assessments") or {}
+    if isinstance(saved_assessment, dict):
+        saved_assessment = saved_assessment.get("ai_markdown", "")
+    st.session_state["ai_assessment"] = saved_assessment or ""
 
 if st.button("✨ Generate / Refresh AI Analysis", type="primary", use_container_width=True):
     with st.spinner("Generating AI assessment..."):
@@ -605,3 +742,20 @@ st.download_button(
     mime="text/csv",
     use_container_width=True,
 )
+
+try:
+    pdf_bytes = build_pdf_export(
+        session=session,
+        questions_rows=export_rows,
+        ai_assessment=st.session_state.get("ai_assessment", ""),
+        conclusion=conclusion,
+    )
+    st.download_button(
+        "Download PDF Report",
+        data=pdf_bytes,
+        file_name=f"interview_{session['session_code']}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
+except Exception as exc:
+    st.warning(f"PDF export belum tersedia. Pastikan dependency reportlab terpasang. Detail: {exc}")

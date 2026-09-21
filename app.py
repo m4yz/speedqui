@@ -23,6 +23,8 @@ SUPABASE_KEY = st.secrets.get(
     "SUPABASE_SERVICE_ROLE_KEY",
     st.secrets.get("SUPABASE_KEY", "")
 )
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = st.secrets.get("OPENAI_MODEL", "gpt-5-mini")
 
 PUBLIC_MODE = st.query_params.get("view", "interviewer").lower()
 SESSION_CODE_FROM_URL = st.query_params.get("session", "")
@@ -166,6 +168,81 @@ def automatic_conclusion(session):
     return (f"Ringkasan indikasi awal dari {completed} jawaban. "
             "Pola ini harus dibaca bersama jawaban verbal dan catatan interviewer. "
             + ' '.join(parts) + " Ini bukan skor otomatis atau keputusan hiring.")
+
+def build_ai_prompt(session):
+    answers = session.get("answers") or {}
+    notes = session.get("notes") or {}
+    rows = []
+    for q in QUESTIONS:
+        answer = answers.get(str(q["id"]), "")
+        if answer not in ("A", "B"):
+            continue
+        chosen = q["a"] if answer == "A" else q["b"]
+        rows.append({
+            "question_id": q["id"],
+            "category": q["category"],
+            "question": q["question"],
+            "selected_option": answer,
+            "selected_text": chosen,
+            "interviewer_note": notes.get(str(q["id"]), ""),
+        })
+    return {
+        "candidate_name": session.get("candidate_name", ""),
+        "position": session.get("position", ""),
+        "interview_date": session.get("interview_date", ""),
+        "responses": rows,
+    }
+
+
+def generate_ai_assessment(session):
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY belum dikonfigurasi di Streamlit Secrets.")
+
+    system_prompt = (
+        "You are an HR interview assessment assistant for an IT hotel operations role. "
+        "Write the assessment in clear professional Indonesian. Treat A/B choices as "
+        "behavioral preferences, not as automatic good/bad scores. Do not invent evidence. "
+        "Separate observed evidence from hypotheses and validation needs. Do not make a "
+        "final hiring decision. Return Markdown with these headings: Executive Summary, "
+        "Competency Review, Potential Strengths to Validate, Areas Requiring Validation, "
+        "Suggested Follow-up Questions, and Interviewer Decision Support."
+    )
+    user_prompt = (
+        "Analyze the following interview data. Mention when interviewer notes are absent "
+        "or insufficient. Use balanced, evidence-based language.\\n\\n"
+        + json.dumps(build_ai_prompt(session), ensure_ascii=False, indent=2)
+    )
+    response = requests.post(
+        "https://api.openai.com/v1/responses",
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": OPENAI_MODEL,
+            "input": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        },
+        timeout=90,
+    )
+    if not response.ok:
+        raise RuntimeError(
+            f"OpenAI request failed ({response.status_code}): "
+            f"{response.text[:500]}"
+        )
+    data = response.json()
+    output_text = data.get("output_text", "")
+    if not output_text:
+        for item in data.get("output", []):
+            for content in item.get("content", []):
+                if content.get("type") == "output_text":
+                    output_text += content.get("text", "")
+    if not output_text.strip():
+        raise RuntimeError("OpenAI tidak mengembalikan teks analisis.")
+    return output_text.strip()
+
 
 # ============================================================
 # SUPABASE HELPERS
@@ -437,6 +514,28 @@ for category in dict.fromkeys(q["category"] for q in QUESTIONS):
             st.markdown("**Validation points**")
             for item in data["watchouts"]:
                 st.write(f"- {item}")
+
+st.divider()
+st.subheader("🤖 AI Full Assessment")
+st.caption("Private interviewer-only analysis. The candidate should not see this section.")
+
+if "ai_assessment" not in st.session_state:
+    st.session_state["ai_assessment"] = session.get("assessments") or ""
+
+if st.button("✨ Generate / Refresh AI Analysis", type="primary", use_container_width=True):
+    with st.spinner("Generating AI assessment..."):
+        try:
+            ai_result = generate_ai_assessment(session)
+            st.session_state["ai_assessment"] = ai_result
+            update_session(session["id"], {"assessments": {"ai_markdown": ai_result}})
+            st.success("AI assessment berhasil dibuat dan disimpan.")
+        except Exception as exc:
+            st.error(str(exc))
+
+if st.session_state.get("ai_assessment"):
+    st.markdown(st.session_state["ai_assessment"])
+else:
+    st.info("Klik tombol di atas untuk membuat analisis AI lengkap.")
 
 st.divider()
 st.subheader("🏁 Automatic Interview Conclusion")
